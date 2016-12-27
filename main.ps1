@@ -1,11 +1,12 @@
-param (
+﻿param (
     [string]$name = '*',
-    [string]$path = 'LDAP://OU=mailboxes;DC=dvfu;DC=ru'
+    [string]$path = 'LDAP://OU=mailboxes;DC=dvfu;DC=ru',
+    $printPropNames = $false
 )
 
 # возьмём константы, чтобы удобнее отлаживаться
-$name = "klenin.as"
-$path = 'LDAP://DC=dvfu;DC=ru'
+$name = "klenin*"
+$path = 'LDAP://DC=mydomain;DC=loc'#'LDAP://DC=dvfu;DC=ru'
 
 $root = New-Object DirectoryServices.DirectoryEntry($path)
 $selector = New-Object DirectoryServices.DirectorySearcher
@@ -25,10 +26,23 @@ $selector.PageSize = 100
 # $name может быть "klenin.a", "klenin.a*", "kle*", ....
 $selector.Filter = "(&(objectCategory=Person)(samaccountname=$name*))"
 $adObj = $selector.findall()
-"$($adObj.count) user(s) found"
+#"$($adObj.count) user(s) found"
 
 if ($adObj.count) {
-    foreach ($person in $adObj){
+    $excel = New-Object -ComObject Excel.Application
+    $excel.Visible = $false
+    $workbook = $excel.Workbooks.Add()
+    $sheet = $workbook.Worksheets.Item(1)
+    $sheet.Cells.Item(1, 1) = "$($adObj.count) user(s) found"
+    $counter = 0
+
+    if ($printPropNames) {
+        $counter++
+    }
+
+    foreach ($person in $adObj) {
+        $counter++
+        $sheet.Cells.Item(1, $counter) = $person.Path
         # безумный код для того, чтобы получить два списка свойств
         $p2 = $person.GetDirectoryEntry() # надо будет освободить объект в конце цикла
         $schema = $p2.SchemaEntry # надо будет освободить объект в конце цикла
@@ -41,13 +55,11 @@ if ($adObj.count) {
         $optionalPropNames = $t.InvokeMember("OptionalProperties", [System.Reflection.BindingFlags]::Public -bor [System.Reflection.BindingFlags]::GetProperty, $null, $schema.NativeObject, $null)
         $propNames = $mandatoryPropNames + $optionalPropNames | sort
         $j = 1
-
-        foreach ($name in $propNames){
+        foreach ($name in $propNames) {
             $j++
             if ($mandatoryPropNames.Contains($name)) {
                 $textMarker = "m"
-            }
-            else {
+            } else {
                 $textMarker = "o"
             }
 
@@ -68,12 +80,22 @@ if ($adObj.count) {
                 # если добавить условие и чуток кода, то можно красивенько форматировать "массив байтов" в виде "0x01 0xAB" или "01 AB"
                 $propertyValue = "{0}" -f [string] $person.Properties[$name][0]
             }
-            "[{0}] {1}: {2}" -f $textMarker, $propertyName, $propertyValue
+            if ($propertyValue) {
+                $sheet.Cells.Item($j, $counter) = $propertyValue
+            }
+            if ($printPropNames) {
+                $sheet.Cells.Item($j, 1) = $propertyName
+            }
         }
 
         # надо освободить объекты.
         # они сами потом освободятся, но могут быть нюансы при больших объёмах или работе в интерактивном режиме
         $schema.Dispose()
         $p2.Dispose()
+        $printPropNames = $false
     }
+    $xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
+    $excel.ActiveWorkbook.SaveAs("C:\Users\Misha\Desktop\ActiveDirectory\myfile.xls", $xlFixedFormat)
+    $excel.Workbooks.Close()
+    $excel.Quit()    
 }
