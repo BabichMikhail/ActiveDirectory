@@ -1,6 +1,7 @@
 ﻿param (
     [string]$name = '*',
     [string]$path = 'LDAP://OU=mailboxes;DC=dvfu;DC=ru',
+    [string]$objectCategory = 'User',
     [bool]$printPropNames = $false
 )
 
@@ -24,7 +25,7 @@ $selector.PageSize = 100
 # вот такой код сразу найдёт только нужные объекты. ничего лишнего вычитываться не будет
 # "*" после $name нужна для того, чтобы просто указывать маску для имён.
 # $name может быть "klenin.a", "klenin.a*", "kle*", ....
-$selector.Filter = "(&(objectCategory=Person)(samaccountname=$name*))"
+$selector.Filter = "(&(objectCategory=$objectCategory)(samaccountname=$name*))"
 $adObj = $selector.findall()
 #"$($adObj.count) user(s) found"
 
