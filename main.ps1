@@ -1,9 +1,28 @@
 ﻿param (
     [string]$name = '*',
     [string]$path = 'LDAP://OU=mailboxes;DC=dvfu;DC=ru',
-    [string]$objectCategory = 'User',
-    [bool]$printPropNames = $false
+    [switch]$users = $false,
+    [switch]$computers = $false,
+    [switch]$printPropNames = $false
 )
+
+$objectCategory = "";
+
+if ($users -and $computers) {
+    throw "Choose either users or computers, not both"
+}
+
+if (!$users -and !$computers) {
+    $users = $true;
+}
+
+if ($users) {
+    $objectCategory = "User"
+}
+
+if ($computers) {
+    $objectCategory = "Computer"
+}
 
 # возьмём константы, чтобы удобнее отлаживаться
 $name = "klenin*"
