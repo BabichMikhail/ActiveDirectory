@@ -1,7 +1,7 @@
 ﻿param (
     [string]$name = '*',
     [string]$path = 'LDAP://OU=mailboxes;DC=dvfu;DC=ru',
-    $printPropNames = $false
+    [bool]$printPropNames = $false
 )
 
 # возьмём константы, чтобы удобнее отлаживаться
