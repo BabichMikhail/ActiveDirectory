@@ -1,10 +1,16 @@
 ﻿param (
     [string]$name = '*',
     [string]$path = 'LDAP://OU=mailboxes;DC=dvfu;DC=ru',
+    [string]$fname = '',
     [switch]$users = $false,
     [switch]$computers = $false,
-    [switch]$printPropNames = $false
+    [switch]$printPropNames = $true
 )
+
+if ($fname -eq '') {
+    $dirname = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
+    $fname =  "{0}\{1}" -f [string]$dirname, "myfile.xlsx"
+}
 
 $objectCategory = "";
 
@@ -23,7 +29,8 @@ if ($users) {
 if ($computers) {
     $objectCategory = "Computer"
 }
-
+"Hello world"
+$fname
 # возьмём константы, чтобы удобнее отлаживаться
 $name = "klenin*"
 $path = 'LDAP://DC=mydomain;DC=loc'#'LDAP://DC=dvfu;DC=ru'
@@ -115,7 +122,7 @@ if ($adObj.count) {
         $printPropNames = $false
     }
     $xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
-    $excel.ActiveWorkbook.SaveAs("C:\Users\Misha\Desktop\ActiveDirectory\myfile.xls", $xlFixedFormat)
+    $excel.ActiveWorkbook.SaveAs($fname, $xlFixedFormat)
     $excel.Workbooks.Close()
     $excel.Quit()    
 }
